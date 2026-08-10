@@ -53,6 +53,7 @@
             padding: 20px 28px;
             border-radius: 12px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            gap: 12px;
         }
 
         .header-title h1 {
@@ -80,7 +81,9 @@
             transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
+            justify-content: center;
             gap: 6px;
+            white-space: nowrap;
         }
 
         .btn-primary { background-color: var(--primary); color: white; }
@@ -97,6 +100,7 @@
             border-radius: 6px;
             font-size: 13px;
             outline: none;
+            width: 100%;
         }
 
         .form-control:focus {
@@ -116,15 +120,16 @@
             gap: 20px;
         }
 
-        @media (max-width: 1024px) {
-            .dashboard-grid { grid-template-columns: 1fr; }
-        }
-
         .card {
             background: var(--card-bg);
             border-radius: 12px;
             padding: 24px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        /* Calendar Wrapper */
+        .calendar-wrapper {
+            width: 100%;
         }
 
         /* Calendar Controls */
@@ -133,6 +138,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .month-nav {
@@ -173,7 +180,7 @@
         .legend-item { display: flex; align-items: center; gap: 4px; }
         .legend-color { width: 10px; height: 10px; border-radius: 2px; }
 
-        /* Calendar Grid */
+        /* Calendar Grid (스크롤 없이 100% 폭 고정) */
         .calendar-grid {
             display: grid;
             grid-template-columns: repeat(7, 1fr);
@@ -182,11 +189,12 @@
             border: 1px solid var(--border-color);
             border-radius: 8px;
             overflow: hidden;
+            width: 100%;
         }
 
         .day-header {
             background-color: #f8fafc;
-            padding: 10px;
+            padding: 10px 2px;
             text-align: center;
             font-size: 13px;
             font-weight: 600;
@@ -203,6 +211,7 @@
             display: flex;
             flex-direction: column;
             gap: 4px;
+            overflow: hidden;
         }
 
         .calendar-day.other-month { background-color: #fafafa; opacity: 0.5; }
@@ -210,7 +219,7 @@
         .day-number {
             font-size: 12px;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             color: var(--text-main);
         }
 
@@ -227,12 +236,21 @@
 
         .event-tag {
             font-size: 11px;
-            padding: 4px 6px;
+            padding: 3px 4px;
             border-radius: 4px;
             font-weight: 500;
             display: flex;
             align-items: center;
             justify-content: space-between;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .event-tag-text {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         /* Sidebar Section */
@@ -276,7 +294,7 @@
         .user-info { display: flex; flex-direction: column; gap: 2px; }
         .user-name-job { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .user-name { font-weight: 700; font-size: 13px; }
-        .user-job-badge { font-size: 10px; padding: 1px 5px; border-radius: 4px; font-weight: 600; }
+        .user-job-badge { font-size: 10px; padding: 1px 5px; border-radius: 4px; font-weight: 600; white-space: nowrap; }
         .user-detail { font-size: 11px; color: var(--text-sub); }
 
         .status-badge {
@@ -341,6 +359,7 @@
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            padding: 12px;
         }
 
         .modal.active { display: flex; }
@@ -358,7 +377,7 @@
         }
 
         .modal-header {
-            padding: 18px 24px;
+            padding: 16px 20px;
             border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
@@ -368,7 +387,7 @@
 
         .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-sub); }
 
-        .modal-body { padding: 20px 24px; overflow-y: auto; flex: 1; }
+        .modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
 
         /* Modal Internal Filter */
         .modal-filter-bar {
@@ -380,6 +399,7 @@
             padding: 10px 14px;
             border-radius: 8px;
             border: 1px solid var(--border-color);
+            flex-wrap: wrap;
         }
 
         .form-grid {
@@ -398,17 +418,103 @@
         .form-group label { font-size: 11px; font-weight: 600; color: var(--text-sub); }
 
         .table-container { border: 1px solid var(--border-color); border-radius: 8px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; min-width: 480px; }
         th { background-color: #f8fafc; padding: 10px; font-weight: 600; color: var(--text-sub); border-bottom: 1px solid var(--border-color); }
         td { padding: 10px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
 
         .modal-footer {
-            padding: 14px 24px;
+            padding: 12px 20px;
             border-top: 1px solid var(--border-color);
             display: flex;
             justify-content: flex-end;
             background-color: #f8fafc;
+        }
+
+        /* -------------------------------------------------------------
+           Mobile & Tablet Responsive Adjustments (스크롤 없는 모바일 달력)
+        ------------------------------------------------------------- */
+        @media (max-width: 1024px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 14px 16px;
+            }
+
+            header .btn {
+                width: 100%;
+            }
+
+            .card {
+                padding: 12px;
+            }
+
+            .calendar-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .month-nav {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            /* 모바일 달력 크기 축소 */
+            .day-header {
+                font-size: 11px;
+                padding: 6px 0;
+            }
+
+            .calendar-day {
+                min-height: 62px;
+                padding: 3px;
+                gap: 2px;
+            }
+
+            .day-number {
+                font-size: 10px;
+                margin-bottom: 1px;
+            }
+
+            .calendar-day.today .day-number {
+                width: 16px;
+                height: 16px;
+                font-size: 10px;
+            }
+
+            /* 모바일용 생일자 태그 스타일 */
+            .event-tag {
+                font-size: 9px;
+                padding: 1px 2px;
+                border-left-width: 2px;
+            }
+
+            .event-tag .icon {
+                display: none; /* 모바일 폭 확보를 위해 이모지 숨김 */
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .form-grid #savePersonBtn {
+                grid-column: span 2;
+            }
+
+            .modal-filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
         }
     </style>
 </head>
@@ -442,7 +548,10 @@
                 </div>
             </div>
 
-            <div class="calendar-grid" id="calendarGrid"></div>
+            <!-- Calendar Wrapper -->
+            <div class="calendar-wrapper">
+                <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
         </div>
 
         <!-- Right Side Panel -->
@@ -490,7 +599,7 @@
             </div>
             <div class="modal-body">
                 
-                <!-- Add/Edit Form (직종, 직급, 이름, 생년월일) -->
+                <!-- Add/Edit Form -->
                 <form id="addPersonForm">
                     <input type="hidden" id="editId" value="">
                     <div class="form-grid">
@@ -518,10 +627,10 @@
                     </div>
                 </form>
 
-                <!-- Modal Internal Filter Search Bar -->
+                <!-- Modal Filter Search Bar -->
                 <div class="modal-filter-bar">
                     <div style="display:flex; align-items:center; gap:6px;">
-                        <label for="modalFilterJob" style="font-size:12px; font-weight:600; color:var(--text-sub);">직종 필터:</label>
+                        <label for="modalFilterJob" style="font-size:12px; font-weight:600; color:var(--text-sub); white-space:nowrap;">직종 필터:</label>
                         <select id="modalFilterJob" class="form-control" style="padding:4px 8px;">
                             <option value="전체">전체</option>
                             <option value="매장">매장</option>
@@ -530,8 +639,8 @@
                         </select>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px; flex:1;">
-                        <label for="modalSearchName" style="font-size:12px; font-weight:600; color:var(--text-sub);">이름 검색:</label>
-                        <input type="text" id="modalSearchName" class="form-control" placeholder="이름 검색..." style="padding:4px 8px; flex:1;">
+                        <label for="modalSearchName" style="font-size:12px; font-weight:600; color:var(--text-sub); white-space:nowrap;">이름 검색:</label>
+                        <input type="text" id="modalSearchName" class="form-control" placeholder="이름 검색..." style="padding:4px 8px;">
                     </div>
                 </div>
 
@@ -681,7 +790,7 @@
                 dayBirthdays.forEach(person => {
                     const tag = document.createElement('div');
                     tag.className = `event-tag ${getJobClass(person.job)}`;
-                    tag.innerHTML = `<span>[${person.job}] ${person.name}</span>🎂`;
+                    tag.innerHTML = `<span class="event-tag-text">${person.name}</span><span class="icon">🎂</span>`;
                     dayDiv.appendChild(tag);
                 });
 
