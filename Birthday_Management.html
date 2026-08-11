@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>생일 케이크 관리 시스템</title>
     <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK (v9 호환성 라이브러리) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
     <style>
         :root {
             --bg-color: #f4f6f9;
@@ -22,518 +27,144 @@
             --modal-overlay: rgba(0, 0, 0, 0.5);
         }
 
-        /* 직종별 색상 */
         .job-매장 { background-color: #e3f2fd; color: #1565c0; border-left: 3px solid #1565c0; }
         .job-생산 { background-color: #e8f5e9; color: #2e7d32; border-left: 3px solid #2e7d32; }
         .job-배송 { background-color: #fff3e0; color: #e65100; border-left: 3px solid #e65100; }
         .job-기타 { background-color: #eceff1; color: #455a64; border-left: 3px solid #455a64; }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 24px; max-width: 1400px; margin: 0 auto; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-main);
-            padding: 24px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-
-        /* Header */
         header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            background: var(--card-bg);
-            padding: 20px 28px;
-            border-radius: 12px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            gap: 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 20px; background: var(--card-bg); padding: 20px 28px;
+            border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); gap: 12px;
         }
 
-        .header-title h1 {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .header-title p {
-            font-size: 13px;
-            color: var(--text-sub);
-            margin-top: 4px;
-        }
+        .header-title h1 { font-size: 22px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 10px; }
+        .header-title p { font-size: 13px; color: var(--text-sub); margin-top: 4px; }
 
         .btn {
-            padding: 10px 18px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            white-space: nowrap;
+            padding: 10px 18px; border-radius: 8px; font-size: 14px; font-weight: 600;
+            border: none; cursor: pointer; transition: all 0.2s ease;
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px; white-space: nowrap;
         }
-
         .btn-primary { background-color: var(--primary); color: white; }
         .btn-primary:hover { background-color: var(--primary-hover); }
         .btn-secondary { background-color: #edf2f7; color: #4a5568; }
         .btn-secondary:hover { background-color: #e2e8f0; }
         .btn-danger { background-color: #fff5f5; color: var(--danger); border: 1px solid #feb2b2; }
         .btn-danger:hover { background-color: #ffe3e3; }
-        .btn-sm { padding: 6px 12px; font-size: 12px; }
+        .btn-sm { padding: 5px 10px; font-size: 12px; }
 
-        .form-control {
-            padding: 8px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 13px;
-            outline: none;
-            width: 100%;
-        }
+        .form-control { padding: 8px 12px; border: 1px solid var(--border-color); border-radius: 6px; font-size: 13px; outline: none; width: 100%; }
+        .form-control:focus { border-color: var(--primary); }
 
-        .form-control:focus {
-            border-color: var(--primary);
-        }
+        .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .side-panel { display: flex; flex-direction: column; gap: 20px; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 24px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
 
-        /* Main Dashboard Grid Layout */
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 20px;
-        }
-
-        .side-panel {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }
-
-        /* Calendar Wrapper */
-        .calendar-wrapper {
-            width: 100%;
-        }
-
-        /* Calendar Controls */
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
-        .month-nav {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .month-nav h2 {
-            font-size: 20px;
-            font-weight: 700;
-            min-width: 130px;
-            text-align: center;
-        }
-
-        .nav-btn {
-            background: none;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            width: 32px;
-            height: 32px;
-            cursor: pointer;
-            font-size: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--text-main);
-        }
-
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px; }
+        .month-nav { display: flex; align-items: center; gap: 16px; }
+        .month-nav h2 { font-size: 20px; font-weight: 700; min-width: 130px; text-align: center; }
+        .nav-btn { background: none; border: 1px solid var(--border-color); border-radius: 6px; width: 32px; height: 32px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; }
         .nav-btn:hover { background-color: var(--bg-color); }
 
-        .job-legend {
-            display: flex;
-            gap: 12px;
-            font-size: 12px;
-        }
-
+        .job-legend { display: flex; gap: 12px; font-size: 12px; }
         .legend-item { display: flex; align-items: center; gap: 4px; }
         .legend-color { width: 10px; height: 10px; border-radius: 2px; }
 
-        /* Calendar Grid (스크롤 없이 100% 폭 고정) */
         .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 1px;
-            background-color: var(--border-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
-            width: 100%;
+            display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px;
+            background-color: var(--border-color); border: 1px solid var(--border-color);
+            border-radius: 8px; overflow: hidden; width: 100%;
         }
 
-        .day-header {
-            background-color: #f8fafc;
-            padding: 10px 2px;
-            text-align: center;
-            font-size: 13px;
-            font-weight: 600;
-            color: var(--text-sub);
-        }
-
+        .day-header { background-color: #f8fafc; padding: 10px 2px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-sub); }
         .day-header:first-child { color: #e53e3e; }
         .day-header:last-child { color: #3182ce; }
 
-        .calendar-day {
-            background-color: var(--card-bg);
-            min-height: 105px;
-            padding: 6px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            overflow: hidden;
-        }
-
+        .calendar-day { background-color: var(--card-bg); min-height: 105px; padding: 6px; display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
         .calendar-day.other-month { background-color: #fafafa; opacity: 0.5; }
+        .day-number { font-size: 12px; font-weight: 600; margin-bottom: 2px; color: var(--text-main); }
+        .calendar-day.today .day-number { background-color: var(--primary); color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-        .day-number {
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 2px;
-            color: var(--text-main);
-        }
+        .event-tag { font-size: 11px; padding: 3px 4px; border-radius: 4px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-        .calendar-day.today .day-number {
-            background-color: var(--primary);
-            color: white;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
+        .sidebar-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .badge-count { background: #edf2f7; color: var(--primary); font-size: 12px; padding: 2px 8px; border-radius: 12px; }
 
-        .event-tag {
-            font-size: 11px;
-            padding: 3px 4px;
-            border-radius: 4px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .event-tag-text {
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        /* Sidebar Section */
-        .sidebar-title {
-            font-size: 16px;
-            font-weight: 700;
-            margin-bottom: 14px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .badge-count {
-            background: #edf2f7;
-            color: var(--primary);
-            font-size: 12px;
-            padding: 2px 8px;
-            border-radius: 12px;
-        }
-
-        .birthday-list {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            max-height: 260px;
-            overflow-y: auto;
-        }
-
-        .birthday-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            background: #fff;
-        }
-
+        .birthday-list { display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow-y: auto; }
+        .birthday-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px; background: #fff; }
         .user-info { display: flex; flex-direction: column; gap: 2px; }
         .user-name-job { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
         .user-name { font-weight: 700; font-size: 13px; }
         .user-job-badge { font-size: 10px; padding: 1px 5px; border-radius: 4px; font-weight: 600; white-space: nowrap; }
         .user-detail { font-size: 11px; color: var(--text-sub); }
 
-        .status-badge {
-            font-size: 11px;
-            font-weight: 600;
-            padding: 4px 8px;
-            border-radius: 20px;
-            white-space: nowrap;
-        }
-
+        .status-badge { font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 20px; white-space: nowrap; }
         .status-badge.completed { background-color: var(--success-bg); color: var(--success-text); }
         .status-badge.pending { background-color: var(--pending-bg); color: var(--pending-text); }
 
-        /* Summary Card */
-        .summary-box {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .summary-card {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            text-align: center;
-            background: #f8fafc;
-            border: 1px solid var(--border-color);
-        }
-
+        .summary-box { display: flex; gap: 12px; margin-bottom: 12px; }
+        .summary-card { flex: 1; padding: 12px; border-radius: 8px; text-align: center; background: #f8fafc; border: 1px solid var(--border-color); }
         .summary-card.completed { background-color: var(--success-bg); }
         .summary-card.pending { background-color: var(--pending-bg); }
-
-        .summary-card .num {
-            font-size: 20px;
-            font-weight: 700;
-            margin-top: 4px;
-        }
-
+        .summary-card .num { font-size: 20px; font-weight: 700; margin-top: 4px; }
         .summary-card.completed .num { color: var(--success-text); }
         .summary-card.pending .num { color: var(--pending-text); }
 
         .empty-state { text-align: center; padding: 20px 0; color: var(--text-sub); font-size: 12px; }
+        footer { margin-top: 20px; background: #f8fafc; border: 1px dashed var(--border-color); padding: 14px 20px; border-radius: 8px; font-size: 13px; color: #64748b; text-align: center; }
 
-        /* Notice Footer */
-        footer {
-            margin-top: 20px;
-            background: #f8fafc;
-            border: 1px dashed var(--border-color);
-            padding: 14px 20px;
-            border-radius: 8px;
-            font-size: 13px;
-            color: #64748b;
-            text-align: center;
-        }
-
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background-color: var(--modal-overlay);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-            padding: 12px;
-        }
-
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--modal-overlay); z-index: 1000; justify-content: center; align-items: center; padding: 12px; }
         .modal.active { display: flex; }
-
-        .modal-content {
-            background: white;
-            width: 100%;
-            max-width: 750px;
-            border-radius: 12px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-            overflow: hidden;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .modal-header {
-            padding: 16px 20px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #f8fafc;
-        }
-
+        .modal-content { background: white; width: 100%; max-width: 800px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column; }
+        .modal-header { padding: 16px 20px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background-color: #f8fafc; }
         .close-btn { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-sub); }
-
         .modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
 
-        /* Modal Internal Filter */
-        .modal-filter-bar {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 16px;
-            align-items: center;
-            background: #fff;
-            padding: 10px 14px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            flex-wrap: wrap;
-        }
-
-        .form-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr) auto;
-            gap: 10px;
-            margin-bottom: 20px;
-            align-items: flex-end;
-            background: #f8fafc;
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
-
+        .modal-filter-bar { display: flex; gap: 12px; margin-bottom: 16px; align-items: center; background: #fff; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap; }
+        .form-grid { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 10px; margin-bottom: 20px; align-items: flex-end; background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid var(--border-color); }
         .form-group { display: flex; flex-direction: column; gap: 4px; }
         .form-group label { font-size: 11px; font-weight: 600; color: var(--text-sub); }
 
         .table-container { border: 1px solid var(--border-color); border-radius: 8px; overflow-x: auto; }
-        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; min-width: 480px; }
+        table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; min-width: 550px; }
         th { background-color: #f8fafc; padding: 10px; font-weight: 600; color: var(--text-sub); border-bottom: 1px solid var(--border-color); }
         td { padding: 10px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
-        tr:last-child td { border-bottom: none; }
 
-        .modal-footer {
-            padding: 12px 20px;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: flex-end;
-            background-color: #f8fafc;
-        }
+        /* 체크박스 커스텀 스타일 */
+        .check-container { display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; font-size: 12px; font-weight: 600; }
+        .check-container input { cursor: pointer; width: 16px; height: 16px; accent-color: #2e7d32; }
 
-        /* -------------------------------------------------------------
-           Mobile & Tablet Responsive Adjustments (스크롤 없는 모바일 달력)
-        ------------------------------------------------------------- */
-        @media (max-width: 1024px) {
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
+        @media (max-width: 1024px) { .dashboard-grid { grid-template-columns: 1fr; } }
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-
-            header {
-                flex-direction: column;
-                align-items: flex-start;
-                padding: 14px 16px;
-            }
-
-            header .btn {
-                width: 100%;
-            }
-
-            .card {
-                padding: 12px;
-            }
-
-            .calendar-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .month-nav {
-                width: 100%;
-                justify-content: space-between;
-            }
-
-            /* 모바일 달력 크기 축소 */
-            .day-header {
-                font-size: 11px;
-                padding: 6px 0;
-            }
-
-            .calendar-day {
-                min-height: 62px;
-                padding: 3px;
-                gap: 2px;
-            }
-
-            .day-number {
-                font-size: 10px;
-                margin-bottom: 1px;
-            }
-
-            .calendar-day.today .day-number {
-                width: 16px;
-                height: 16px;
-                font-size: 10px;
-            }
-
-            /* 모바일용 생일자 태그 스타일 */
-            .event-tag {
-                font-size: 9px;
-                padding: 1px 2px;
-                border-left-width: 2px;
-            }
-
-            .event-tag .icon {
-                display: none; /* 모바일 폭 확보를 위해 이모지 숨김 */
-            }
-
-            .form-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-
-            .form-grid #savePersonBtn {
-                grid-column: span 2;
-            }
-
-            .modal-filter-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
+            body { padding: 10px; }
+            header { flex-direction: column; align-items: flex-start; padding: 14px 16px; }
+            header .btn { width: 100%; }
+            .card { padding: 12px; }
+            .calendar-header { flex-direction: column; align-items: flex-start; }
+            .month-nav { width: 100%; justify-content: space-between; }
+            .calendar-day { min-height: 62px; padding: 3px; gap: 2px; }
+            .event-tag { font-size: 9px; padding: 1px 2px; }
+            .form-grid { grid-template-columns: 1fr 1fr; }
+            .form-grid #savePersonBtn { grid-column: span 2; }
+            .modal-filter-bar { flex-direction: column; align-items: stretch; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Header -->
     <header>
         <div class="header-title">
             <h1>🎂 생일 케이크 관리</h1>
-            <p>기준일: 2026년 8월 10일 | 생일자 케이크 지급 관리</p>
+            <p>다중 접속 실시간 동기화 및 지급 체크 시스템 🟢</p>
         </div>
-        <button class="btn btn-primary" id="openManageModalBtn">
-            ⚙️ 생일자 추가/관리
-        </button>
+        <button class="btn btn-primary" id="openManageModalBtn">⚙️ 생일자 추가/관리</button>
     </header>
 
-    <!-- Main Dashboard Grid -->
     <div class="dashboard-grid">
-        <!-- Left: Calendar Card -->
         <div class="card">
             <div class="calendar-header">
                 <div class="month-nav">
@@ -547,16 +178,10 @@
                     <div class="legend-item"><span class="legend-color" style="background:#e65100;"></span>배송</div>
                 </div>
             </div>
-
-            <!-- Calendar Wrapper -->
-            <div class="calendar-wrapper">
-                <div class="calendar-grid" id="calendarGrid"></div>
-            </div>
+            <div class="calendar-grid" id="calendarGrid"></div>
         </div>
 
-        <!-- Right Side Panel -->
         <div class="side-panel">
-            <!-- 1. 이번 달 생일자 Card -->
             <div class="card">
                 <div class="sidebar-title">
                     <span>🎉 이번 달 생일자</span>
@@ -565,11 +190,8 @@
                 <div class="birthday-list" id="monthlyBirthdayList"></div>
             </div>
 
-            <!-- 2. 지급 현황 Card -->
             <div class="card">
-                <div class="sidebar-title">
-                    <span>📊 이번 달 지급 현황</span>
-                </div>
+                <div class="sidebar-title"><span>📊 이번 달 지급 현황</span></div>
                 <div class="summary-box">
                     <div class="summary-card completed">
                         <div style="font-size:12px; color:var(--success-text);">지급 완료</div>
@@ -585,21 +207,16 @@
         </div>
     </div>
 
-    <!-- Notice Footer -->
-    <footer>
-        입사 3개월이 지나야 생일 케이크 대상입니다.
-    </footer>
+    <footer>입사 3개월이 지나야 생일 케이크 대상입니다.</footer>
 
-    <!-- Birthday Manage Modal -->
+    <!-- 관리 모달 -->
     <div class="modal" id="manageModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>직원 정보 추가 및 관리</h3>
+                <h3>직원 정보 추가 및 케이크 지급 관리</h3>
                 <button class="close-btn" id="closeManageModalBtn">&times;</button>
             </div>
             <div class="modal-body">
-                
-                <!-- Add/Edit Form -->
                 <form id="addPersonForm">
                     <input type="hidden" id="editId" value="">
                     <div class="form-grid">
@@ -617,7 +234,7 @@
                         </div>
                         <div class="form-group">
                             <label for="inputName">이름</label>
-                            <input type="text" id="inputName" class="form-control" placeholder="예: 김00" required>
+                            <input type="text" id="inputName" class="form-control" placeholder="예: 이00" required>
                         </div>
                         <div class="form-group">
                             <label for="inputBirth">생년월일</label>
@@ -627,10 +244,9 @@
                     </div>
                 </form>
 
-                <!-- Modal Filter Search Bar -->
                 <div class="modal-filter-bar">
                     <div style="display:flex; align-items:center; gap:6px;">
-                        <label for="modalFilterJob" style="font-size:12px; font-weight:600; color:var(--text-sub); white-space:nowrap;">직종 필터:</label>
+                        <label for="modalFilterJob" style="font-size:12px; font-weight:600; color:var(--text-sub);">직종 필터:</label>
                         <select id="modalFilterJob" class="form-control" style="padding:4px 8px;">
                             <option value="전체">전체</option>
                             <option value="매장">매장</option>
@@ -639,12 +255,11 @@
                         </select>
                     </div>
                     <div style="display:flex; align-items:center; gap:6px; flex:1;">
-                        <label for="modalSearchName" style="font-size:12px; font-weight:600; color:var(--text-sub); white-space:nowrap;">이름 검색:</label>
+                        <label for="modalSearchName" style="font-size:12px; font-weight:600; color:var(--text-sub);">이름 검색:</label>
                         <input type="text" id="modalSearchName" class="form-control" placeholder="이름 검색..." style="padding:4px 8px;">
                     </div>
                 </div>
 
-                <!-- Data Table -->
                 <div class="table-container">
                     <table>
                         <thead>
@@ -653,6 +268,7 @@
                                 <th>직급</th>
                                 <th>이름</th>
                                 <th>생년월일</th>
+                                <th style="text-align: center; width: 90px;">지급 체크</th>
                                 <th style="width: 100px; text-align: center;">관리</th>
                             </tr>
                         </thead>
@@ -660,35 +276,39 @@
                     </table>
                 </div>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="padding:12px 20px; border-top:1px solid var(--border-color); text-align:right;">
                 <button class="btn btn-secondary" id="closeModalFooterBtn">닫기</button>
             </div>
         </div>
     </div>
 
     <script>
-        // Reference Date: 2026-08-10
-        const TODAY = new Date(2026, 7, 10);
+        // Firebase 설정
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwpbvoxzFfRrFfHHVXPEcwNf5cinl_21M",
+            authDomain: "birthday-management-34d5f.firebaseapp.com",
+            databaseURL: "https://birthday-management-34d5f-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "birthday-management-34d5f",
+            storageBucket: "birthday-management-34d5f.firebasestorage.app",
+            messagingSenderId: "1019385592515",
+            appId: "1:1019385592515:web:def95edf8be36c27af4076",
+            measurementId: "G-07GE339LQD"
+        };
 
-        // Initial 5 Sample Persons
-        const initialPersons = [
-            { id: 1, name: '김00', role: '점장', job: '매장', birth: '1993-08-04' },
-            { id: 2, name: '이00', role: '디자이너', job: '생산', birth: '1995-08-10' },
-            { id: 3, name: '박00', role: '매니저', job: '매장', birth: '1992-08-18' },
-            { id: 4, name: '최00', role: '기사', job: '배송', birth: '1990-08-25' },
-            { id: 5, name: '정00', role: '파티쉐', job: '생산', birth: '1994-09-05' }
-        ];
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const personsRef = database.ref('persons');
 
-        let persons = [];
-        let currentYear = 2026;
-        let currentMonth = 7; // August (0-indexed)
+        const TODAY = new Date();
+        let persons = []; 
+        let currentYear = TODAY.getFullYear();
+        let currentMonth = TODAY.getMonth();
 
-        // DOM Elements
+        // DOM elements
         const calendarGrid = document.getElementById('calendarGrid');
         const currentMonthTitle = document.getElementById('currentMonthTitle');
         const prevMonthBtn = document.getElementById('prevMonthBtn');
         const nextMonthBtn = document.getElementById('nextMonthBtn');
-        
         const monthlyBirthdayList = document.getElementById('monthlyBirthdayList');
         const statusBirthdayList = document.getElementById('statusBirthdayList');
         const monthlyCount = document.getElementById('monthlyCount');
@@ -713,24 +333,24 @@
         const personTableBody = document.getElementById('personTableBody');
 
         function initApp() {
-            loadData();
-            renderAll();
+            listenToFirebaseRealtime();
             setupEventListeners();
         }
 
-        function loadData() {
-            const stored = localStorage.getItem('cake_birthday_persons_v3');
-            if (stored) {
-                persons = JSON.parse(stored);
-            } else {
-                persons = [...initialPersons];
-                saveData();
-            }
-        }
-
-        function saveData() {
-            localStorage.setItem('cake_birthday_persons_v3', JSON.stringify(persons));
-            renderAll();
+        // 실시간 원자적 동기화
+        function listenToFirebaseRealtime() {
+            personsRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                persons = [];
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        persons.push({ id: key, ...data[key] });
+                    });
+                }
+                renderAll();
+            }, (error) => {
+                alert("데이터 읽기 권한 오류: " + error.message);
+            });
         }
 
         function renderAll() {
@@ -744,7 +364,6 @@
             return validJobs.includes(job) ? `job-${job}` : 'job-기타';
         }
 
-        // Render Calendar
         function renderCalendar() {
             calendarGrid.innerHTML = '';
             currentMonthTitle.textContent = `${currentYear}년 ${currentMonth + 1}월`;
@@ -763,7 +382,6 @@
             const totalDays = lastDay.getDate();
             const prevLastDay = new Date(currentYear, currentMonth, 0).getDate();
 
-            // Prev Month Fillers
             for (let i = startDayIndex - 1; i >= 0; i--) {
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'calendar-day other-month';
@@ -771,7 +389,6 @@
                 calendarGrid.appendChild(dayDiv);
             }
 
-            // Current Month
             for (let day = 1; day <= totalDays; day++) {
                 const dayDiv = document.createElement('div');
                 dayDiv.className = 'calendar-day';
@@ -783,6 +400,7 @@
                 dayDiv.innerHTML = `<span class="day-number">${day}</span>`;
 
                 const dayBirthdays = persons.filter(p => {
+                    if (!p || !p.birth) return false;
                     const bDate = new Date(p.birth);
                     return bDate.getMonth() === currentMonth && bDate.getDate() === day;
                 });
@@ -790,14 +408,13 @@
                 dayBirthdays.forEach(person => {
                     const tag = document.createElement('div');
                     tag.className = `event-tag ${getJobClass(person.job)}`;
-                    tag.innerHTML = `<span class="event-tag-text">${person.name}</span><span class="icon">🎂</span>`;
+                    tag.innerHTML = `<span>${person.name}</span><span>${person.given ? '✅' : '🎂'}</span>`;
                     dayDiv.appendChild(tag);
                 });
 
                 calendarGrid.appendChild(dayDiv);
             }
 
-            // Next Month Fillers
             const totalCells = startDayIndex + totalDays;
             const nextDays = (7 - (totalCells % 7)) % 7;
             for (let i = 1; i <= nextDays; i++) {
@@ -808,14 +425,11 @@
             }
         }
 
-        // Render Monthly Birthday & Status Lists
         function renderMainLists() {
             monthlyBirthdayList.innerHTML = '';
             statusBirthdayList.innerHTML = '';
 
-            const monthlyPersons = persons.filter(p => new Date(p.birth).getMonth() === currentMonth);
-            
-            // Sort by Day
+            const monthlyPersons = persons.filter(p => p && p.birth && new Date(p.birth).getMonth() === currentMonth);
             monthlyPersons.sort((a, b) => new Date(a.birth).getDate() - new Date(b.birth).getDate());
 
             monthlyCount.textContent = `${monthlyPersons.length}명`;
@@ -835,19 +449,12 @@
                 const bDate = new Date(person.birth);
                 const birthDayStr = `${currentMonth + 1}월 ${bDate.getDate()}일`;
 
-                // Status Calculation based on Reference Date: 2026-08-10
-                let isCompleted = false;
-                if (currentYear < TODAY.getFullYear()) {
-                    isCompleted = true;
-                } else if (currentYear === TODAY.getFullYear()) {
-                    if (currentMonth < TODAY.getMonth()) isCompleted = true;
-                    else if (currentMonth === TODAY.getMonth()) isCompleted = bDate.getDate() <= TODAY.getDate();
-                }
+                // 수동 지급 체크 여부 반영
+                const isCompleted = person.given === true;
 
                 if (isCompleted) compCount++;
                 else pendCount++;
 
-                // 1. 이번 달 생일자 아이템
                 const bItem = document.createElement('div');
                 bItem.className = 'birthday-item';
                 bItem.innerHTML = `
@@ -861,7 +468,6 @@
                 `;
                 monthlyBirthdayList.appendChild(bItem);
 
-                // 2. 지급 현황 아이템
                 const sItem = document.createElement('div');
                 sItem.className = 'birthday-item';
                 sItem.innerHTML = `
@@ -884,7 +490,6 @@
             pendingCount.textContent = pendCount;
         }
 
-        // Render Management Table in Modal with Search & Job Filter
         function renderTable() {
             personTableBody.innerHTML = '';
 
@@ -892,57 +497,76 @@
             const searchVal = modalSearchName.value.trim().toLowerCase();
 
             const filteredPersons = persons.filter(p => {
+                if (!p) return false;
                 const matchJob = (jobVal === '전체') || (p.job === jobVal);
-                const matchName = p.name.toLowerCase().includes(searchVal);
+                const matchName = p.name ? p.name.toLowerCase().includes(searchVal) : false;
                 return matchJob && matchName;
             });
 
             filteredPersons.sort((a, b) => a.name.localeCompare(b.name));
 
             if (filteredPersons.length === 0) {
-                personTableBody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-sub); padding:20px;">검색 결과가 없습니다.</td></tr>`;
+                personTableBody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-sub); padding:20px;">검색 결과가 없습니다.</td></tr>`;
                 return;
             }
 
             filteredPersons.forEach(person => {
                 const tr = document.createElement('tr');
+                const isChecked = person.given ? 'checked' : '';
                 tr.innerHTML = `
                     <td><span class="user-job-badge ${getJobClass(person.job)}">${person.job}</span></td>
                     <td>${person.role}</td>
                     <td><strong>${person.name}</strong></td>
                     <td>${person.birth}</td>
                     <td style="text-align: center;">
-                        <button class="btn btn-secondary btn-sm" onclick="editPerson(${person.id})">수정</button>
-                        <button class="btn btn-danger btn-sm" onclick="deletePerson(${person.id})">삭제</button>
+                        <label class="check-container">
+                            <input type="checkbox" ${isChecked} onchange="toggleCakeStatus('${person.id}', this.checked)">
+                            <span style="color:${person.given ? 'var(--success-text)' : 'var(--text-sub)'}">${person.given ? '완료' : '예정'}</span>
+                        </label>
+                    </td>
+                    <td style="text-align: center;">
+                        <button class="btn btn-secondary btn-sm" onclick="editPerson('${person.id}')">수정</button>
+                        <button class="btn btn-danger btn-sm" onclick="deletePerson('${person.id}')">삭제</button>
                     </td>
                 `;
                 personTableBody.appendChild(tr);
             });
         }
 
-        // Add / Update Person
+        // 케이크 지급 여부 체크 실시간 업데이트 함수
+        window.toggleCakeStatus = function(id, isChecked) {
+            personsRef.child(id).update({
+                given: isChecked
+            }).catch(err => alert("지급 상태 변경 실패: " + err.message));
+        };
+
+        // 데이터 저장 / 수정 (원자적 개별 처리)
         addPersonForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const id = editIdInput.value;
-            const job = inputJob.value;
-            const role = inputRole.value.trim();
-            const name = inputName.value.trim();
-            const birth = inputBirth.value;
-
-            if (!name || !birth || !role) return;
-
+            
             if (id) {
-                const index = persons.findIndex(p => p.id === parseInt(id));
-                if (index !== -1) {
-                    persons[index] = { id: parseInt(id), job, role, name, birth };
-                }
+                // 수정 시 기존의 given(지급 여부) 속성 유지
+                const existing = persons.find(p => p.id === id);
+                const payload = {
+                    job: inputJob.value,
+                    role: inputRole.value.trim(),
+                    name: inputName.value.trim(),
+                    birth: inputBirth.value,
+                    given: existing && existing.given ? true : false
+                };
+                personsRef.child(id).update(payload).then(() => resetForm()).catch(err => alert("수정 실패: " + err.message));
             } else {
-                const newId = persons.length > 0 ? Math.max(...persons.map(p => p.id)) + 1 : 1;
-                persons.push({ id: newId, job, role, name, birth });
+                // 추가 시 기본적으로 given은 false(지급 예정)
+                const payload = {
+                    job: inputJob.value,
+                    role: inputRole.value.trim(),
+                    name: inputName.value.trim(),
+                    birth: inputBirth.value,
+                    given: false
+                };
+                personsRef.push(payload).then(() => resetForm()).catch(err => alert("추가 실패: " + err.message));
             }
-
-            resetForm();
-            saveData();
         });
 
         window.editPerson = function(id) {
@@ -959,9 +583,9 @@
 
         window.deletePerson = function(id) {
             if (confirm('해당 직원 정보를 삭제하시겠습니까?')) {
-                persons = persons.filter(p => p.id !== id);
-                if (editIdInput.value == id) resetForm();
-                saveData();
+                personsRef.child(id).remove().then(() => {
+                    if (editIdInput.value === id) resetForm();
+                }).catch(err => alert("삭제 실패: " + err.message));
             }
         };
 
@@ -975,11 +599,9 @@
         }
 
         function setupEventListeners() {
-            // Modal Filter Events
             modalFilterJob.addEventListener('change', renderTable);
             modalSearchName.addEventListener('input', renderTable);
 
-            // Month Navigation
             prevMonthBtn.addEventListener('click', () => {
                 currentMonth--;
                 if (currentMonth < 0) { currentMonth = 11; currentYear--; }
@@ -992,7 +614,6 @@
                 renderAll();
             });
 
-            // Modal Controls
             openManageModalBtn.addEventListener('click', () => manageModal.classList.add('active'));
 
             const closeModal = () => {
