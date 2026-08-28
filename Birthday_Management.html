@@ -91,7 +91,7 @@
         .day-number { font-size: 12px; font-weight: 600; margin-bottom: 2px; color: var(--text-main); }
         .calendar-day.today .day-number { background-color: var(--primary); color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
-        .event-tag { font-size: 11px; padding: 3px 4px; border-radius: 4px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .event-tag { font-size: 11px; padding: 3px 6px; border-radius: 4px; font-weight: 500; display: flex; align-items: center; justify-content: space-between; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .sidebar-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
         .badge-count { background: #edf2f7; color: var(--primary); font-size: 12px; padding: 2px 8px; border-radius: 12px; }
@@ -176,6 +176,9 @@
                 <option value="전체">전체 직종 보기</option>
                 <option value="매장">매장</option>
                 <option value="공장">공장</option>
+                <option value="1공장">1공장</option>
+                <option value="2공장">2공장</option>
+                <option value="케익">케익</option>
                 <option value="포장">포장</option>
                 <option value="배송">배송</option>
                 <option value="관리">관리</option>
@@ -258,6 +261,9 @@
                             <select id="inputJob" class="form-control" required>
                                 <option value="매장">매장</option>
                                 <option value="공장">공장</option>
+                                <option value="1공장">1공장</option>
+                                <option value="2공장">2공장</option>
+                                <option value="케익">케익</option>
                                 <option value="포장">포장</option>
                                 <option value="배송">배송</option>
                                 <option value="관리">관리</option>
@@ -302,6 +308,9 @@
                             <option value="전체">전체</option>
                             <option value="매장">매장</option>
                             <option value="공장">공장</option>
+                            <option value="1공장">1공장</option>
+                            <option value="2공장">2공장</option>
+                            <option value="케익">케익</option>
                             <option value="포장">포장</option>
                             <option value="배송">배송</option>
                             <option value="관리">관리</option>
@@ -343,7 +352,7 @@
             authDomain: "birthday-management-34d5f.firebaseapp.com",
             databaseURL: "https://birthday-management-34d5f-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "birthday-management-34d5f",
-            storageBucket: "birthday-management-34d5f.firebasestorage.app",
+            storageBucket: "birthday-management-34d5f.appspot.com",
             messagingSenderId: "1019385592515",
             appId: "1:1019385592515:web:def95edf8be36c27af4076",
             measurementId: "G-07GE339LQD"
@@ -403,11 +412,8 @@
                 if (data) {
                     Object.keys(data).forEach(key => {
                         let item = data[key];
-                        // 마이그레이션 호환 처리
-                        if (!item.branch && item.job) {
-                            item.branch = item.job;
-                        }
-                        if (!item.job || !['매장', '공장', '포장', '배송', '관리'].includes(item.job)) {
+                        const validJobs = ['매장', '공장', '1공장', '2공장', '케익', '포장', '배송', '관리'];
+                        if (!item.job || !validJobs.includes(item.job)) {
                             item.job = '매장';
                         }
                         persons.push({ id: key, ...item });
@@ -430,17 +436,11 @@
             return validBranches.includes(branch) ? `branch-${branch}` : 'branch-기타';
         }
 
-        // 현재 날짜(TODAY)를 기준으로 입사일로부터 정확히 3개월이 지났는지 비교하여 판단
         function isEligible(hireDateStr) {
             if (!hireDateStr) return false;
             const hire = new Date(hireDateStr);
-            
-            // 입사일로부터 정확히 3개월이 지난 날짜 계산
             const eligibleDate = new Date(hire.getFullYear(), hire.getMonth() + 3, hire.getDate());
-
-            // 오늘 날짜(시간 정보 제거)와 비교
             const todayDateOnly = new Date(TODAY.getFullYear(), TODAY.getMonth(), TODAY.getDate());
-
             return todayDateOnly >= eligibleDate;
         }
 
@@ -496,15 +496,14 @@
                     if (!p || !p.birth) return false;
                     const bDate = new Date(p.birth);
                     if (bDate.getMonth() !== currentMonth || bDate.getDate() !== day) return false;
-                    
-                    // 3개월 경과 여부 체크
                     return isEligible(p.hireDate);
                 });
 
                 dayBirthdays.forEach(person => {
                     const tag = document.createElement('div');
                     tag.className = `event-tag ${getBranchClass(person.branch)}`;
-                    tag.innerHTML = `<span>${person.name}</span><span>${person.given ? '✅' : '🎂'}</span>`;
+                    const tagText = `[${person.job}] ${person.name}`;
+                    tag.innerHTML = `<span>${tagText}</span><span>${person.given ? '✅' : '🎂'}</span>`;
                     dayDiv.appendChild(tag);
                 });
 
@@ -530,8 +529,6 @@
                 if (!p || !p.birth) return false;
                 const bDate = new Date(p.birth);
                 if (bDate.getMonth() !== currentMonth) return false;
-                
-                // 3개월 경과 대상자만 메인 현황에 표시
                 return isEligible(p.hireDate);
             });
 
@@ -576,7 +573,7 @@
                     <div class="user-info">
                         <div class="user-name-branch">
                             <span class="user-name">${person.name}</span>
-                            <span class="user-detail">(${birthDayStr})</span>
+                            <span class="user-detail">(${birthDayStr} / ${person.job})</span>
                         </div>
                     </div>
                     <div>
